@@ -10,11 +10,41 @@ const pool = new Pool({
 	password: config.DB.password,
 });
 
+pool.on('error', (error) => {
+	console.error('Unexpected PostgreSQL pool error', error);
+});
+
+export const connect = async (): Promise<void> => {
+	const client = await pool.connect();
+
+	try {
+		await client.query('SELECT 1');
+		console.log('PostgreSQL connected successfully');
+	} catch (error) {
+		console.error('PostgreSQL connection test failed', error);
+		throw error;
+	} finally {
+		client.release();
+	}
+};
+
 export const query = <Row extends QueryResultRow = QueryResultRow>(
 	text: string,
 	values?: unknown[],
-): Promise<QueryResult<Row>> => pool.query<Row>(text, values);
+): Promise<QueryResult<Row>> =>
+	pool.query<Row>(text, values).catch((error: unknown) => {
+		console.error('PostgreSQL query failed', error);
+		throw error;
+	});
 
-export const close = (): Promise<void> => pool.end();
+export const disconnect = async (): Promise<void> => {
+	await pool.end();
+	console.log('PostgreSQL disconnected');
+};
+
+export const close = disconnect;
+
+void connect().catch(() => {
+});
 
 export default pool;

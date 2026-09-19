@@ -1,10 +1,9 @@
 import {
 	DeleteObjectCommand,
 	DeleteObjectCommandOutput,
-	PutObjectCommand,
 	S3Client,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createHash, createHmac } from 'node:crypto';
 
 import config from '../config/env';
 
@@ -21,6 +20,38 @@ const s3Client = new S3Client({
 	},
 });
 
+const hmac = (key: string | Buffer, value: string): Buffer =>
+	createHmac('sha256', key).update(value).digest();
+
+const generatePresignedUrl = (key: string, contentType: string): string => {
+	const now = new Date();
+	const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+	const date = amzDate.slice(0, 8);
+	const region = config.AWS.region;
+	const service = 's3';
+	const base = endpoint ? new URL(endpoint) : new URL(`https://${bucket}.s3.${region}.amazonaws.com`);
+	const host = base.host;
+	const path = `${endpoint ? `/${bucket}` : ''}/${key.split('/').map(encodeURIComponent).join('/')}`;
+	const scope = `${date}/${region}/${service}/aws4_request`;
+	const query = new URLSearchParams({
+		'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+		'X-Amz-Credential': `${config.AWS.accessKeyId}/${scope}`,
+		'X-Amz-Date': amzDate,
+		'X-Amz-Expires': '3600',
+		'X-Amz-SignedHeaders': 'content-type;host',
+	});
+	const canonicalQuery = [...query.entries()]
+		.sort(([a, av], [b, bv]) => a.localeCompare(b) || av.localeCompare(bv))
+		.map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
+		.join('&');
+	const canonicalHeaders = `content-type:${contentType}\nhost:${host}\n`;
+	const canonicalRequest = `PUT\n${path}\n${canonicalQuery}\n${canonicalHeaders}\ncontent-type;host\nUNSIGNED-PAYLOAD`;
+	const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${createHash('sha256').update(canonicalRequest).digest('hex')}`;
+	const signingKey = hmac(hmac(hmac(hmac(`AWS4${config.AWS.secretAccessKey}`, date), region), service), 'aws4_request');
+	const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+	return `${base.origin}${path}?${query.toString()}&X-Amz-Signature=${signature}`;
+};
+
 export const generatePresignedUploadUrl = async (
 	jobId: string,
 	fileName: string,
@@ -30,15 +61,7 @@ export const generatePresignedUploadUrl = async (
 	const photoKey = `jobs/${jobId}/${Date.now()}-${safeFileName}`;
 
 	try {
-		const uploadUrl = await getSignedUrl(
-			s3Client,
-			new PutObjectCommand({
-				Bucket: bucket,
-				Key: photoKey,
-				ContentType: fileType,
-			}),
-			{ expiresIn: 3600 },
-		);
+		const uploadUrl = generatePresignedUrl(photoKey, fileType);
 
 		return { uploadUrl, photoKey };
 	} catch (error) {
