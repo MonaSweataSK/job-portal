@@ -3,6 +3,7 @@ import express from 'express';
 import config from './config/env';
 import corsHandler from './middleware/corsHandler';
 import errorHandler from './middleware/errorHandler';
+import applicationsRouter from './routes/applications';
 import jobsRouter from './routes/jobs';
 import uploadsRouter from './routes/uploads';
 import { connect, disconnect } from './services/db.service';
@@ -17,6 +18,7 @@ app.get('/', (_request, response) => {
 });
 app.use(jobsRouter);
 app.use(uploadsRouter);
+app.use(applicationsRouter);
 
 app.use(errorHandler);
 
