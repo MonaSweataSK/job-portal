@@ -44,7 +44,4 @@ export const disconnect = async (): Promise<void> => {
 
 export const close = disconnect;
 
-void connect().catch(() => {
-});
-
 export default pool;
