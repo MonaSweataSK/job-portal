@@ -18,8 +18,6 @@ export interface Application {
 	cover_letter: string;
 	photo_url: string;
 	photo_key: string;
-	resume_url: string;
-	resume_key: string;
 	applied_at: Date;
 	created_at: Date;
 }
@@ -36,7 +34,6 @@ export interface ApplicationSubmitRequest {
 	phone: string;
 	coverLetter: string;
 	photoKey: string;
-	resumeKey: string;
 }
 
 export interface ErrorResponse {

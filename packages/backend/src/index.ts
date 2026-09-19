@@ -3,6 +3,8 @@ import express from 'express';
 import config from './config/env';
 import corsHandler from './middleware/corsHandler';
 import errorHandler from './middleware/errorHandler';
+import jobsRouter from './routes/jobs';
+import uploadsRouter from './routes/uploads';
 import { connect, disconnect } from './services/db.service';
 import { close as closeS3 } from './services/s3.service';
 
@@ -13,6 +15,8 @@ app.use(corsHandler);
 app.get('/', (_request, response) => {
 	response.json({ status: 'ok' });
 });
+app.use(jobsRouter);
+app.use(uploadsRouter);
 
 app.use(errorHandler);
 
