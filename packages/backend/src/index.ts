@@ -10,6 +10,10 @@ const app = express();
 
 app.use(express.json());
 app.use(corsHandler);
+app.get('/', (_request, response) => {
+	response.json({ status: 'ok' });
+});
+
 app.use(errorHandler);
 
 const startServer = async (): Promise<void> => {
