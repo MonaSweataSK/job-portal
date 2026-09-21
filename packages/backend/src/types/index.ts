@@ -28,7 +28,7 @@ export interface PresignedUrlResponse {
 }
 
 export interface ApplicationSubmitRequest {
-	jobId: number;
+	jobId: string;
 	fullName: string;
 	email: string;
 	phone: string;
