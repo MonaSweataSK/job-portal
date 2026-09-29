@@ -2,14 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { getJob, submitApplication, uploadPhoto } from '../api/client';
-import { allowedFileTypes, maxFileSize } from '../api/constants';
 import { useApiRequest } from '../api/useApiRequest';
 import type { ApplicationSubmitResponse, JobResponse } from '../types/api';
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type ApplicationField = 'fullName' | 'email' | 'phone' | 'coverLetter' | 'photo';
-type FieldErrors = Partial<Record<ApplicationField, string>>;
+import { validateApplication, type FieldErrors } from '../validation';
 
 function ApplyPage() {
 	const { jobId = '' } = useParams();
@@ -18,6 +13,7 @@ function ApplyPage() {
 	const applicationRequest = useApiRequest<ApplicationSubmitResponse>();
 	const { data: jobData, error: jobError, loading: jobLoading, execute: loadJob } = jobRequest;
 	const [photo, setPhoto] = useState<File | null>(null);
+	const [coverLetter, setCoverLetter] = useState('');
 	const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 	const [uploadProgress, setUploadProgress] = useState(0);
 	const [submissionStage, setSubmissionStage] = useState<'idle' | 'uploading' | 'submitting'>('idle');
@@ -36,17 +32,7 @@ function ApplyPage() {
 			phone: String(formData.get('phone')).trim(),
 			coverLetter: String(formData.get('coverLetter')).trim(),
 		};
-		const errors: FieldErrors = {};
-
-		if (!application.fullName) errors.fullName = 'Enter your full name.';
-		if (!application.email) errors.email = 'Enter your email address.';
-		else if (!emailPattern.test(application.email)) errors.email = 'Enter a valid email address.';
-		if (!application.phone) errors.phone = 'Enter your phone number.';
-		if (!application.coverLetter) errors.coverLetter = 'Add a cover letter.';
-		if (!photo) errors.photo = 'Choose a profile photo.';
-		else if (!allowedFileTypes.includes(photo.type)) errors.photo = 'Choose a JPEG, PNG, or WebP image.';
-		else if (photo.size <= 0 || photo.size >= maxFileSize) errors.photo = 'The image must be smaller than 5 MB.';
-
+		const errors = validateApplication(application, photo);
 		setFieldErrors(errors);
 		if (Object.keys(errors).length > 0 || !photo) return;
 
@@ -106,12 +92,12 @@ function ApplyPage() {
 					</label>
 					<label className="field">
 						<span>Email address</span>
-						<input autoComplete="email" name="email" type="email" required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'email-error' : undefined} placeholder="you@example.com" />
+						<input autoComplete="email" name="email" type="email" maxLength={254} required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'email-error' : undefined} placeholder="you@example.com" />
 						{fieldErrors.email && <span className="field-error" id="email-error">{fieldErrors.email}</span>}
 					</label>
 					<label className="field field-full">
 						<span>Phone number</span>
-						<input autoComplete="tel" name="phone" type="tel" required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'phone-error' : undefined} placeholder="Your contact number" />
+						<input autoComplete="tel" name="phone" type="tel" maxLength={32} required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'phone-error' : undefined} placeholder="e.g. +1 (555) 123-4567" />
 						{fieldErrors.phone && <span className="field-error" id="phone-error">{fieldErrors.phone}</span>}
 					</label>
 				</div>
@@ -119,7 +105,11 @@ function ApplyPage() {
 				<div className="form-section-title form-section-spaced"><span>02</span><h2>Make your introduction</h2></div>
 				<label className="field">
 					<span>Cover letter</span>
-						<textarea name="coverLetter" required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.coverLetter)} aria-describedby={fieldErrors.coverLetter ? 'cover-letter-error' : undefined} rows={7} placeholder="What draws you to this role?" />
+						<textarea name="coverLetter" required disabled={applicationRequest.loading} aria-invalid={Boolean(fieldErrors.coverLetter)} aria-describedby={fieldErrors.coverLetter ? 'cover-letter-error' : undefined} minLength={100} rows={7} value={coverLetter} onChange={(event) => {
+							setCoverLetter(event.currentTarget.value);
+							setFieldErrors((current) => ({ ...current, coverLetter: undefined }));
+						}} placeholder="What draws you to this role?" />
+						<span className="character-count" aria-live="polite">{coverLetter.trim().length} / 100 characters minimum</span>
 						{fieldErrors.coverLetter && <span className="field-error" id="cover-letter-error">{fieldErrors.coverLetter}</span>}
 				</label>
 				<label className="field photo-field">

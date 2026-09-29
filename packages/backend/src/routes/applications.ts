@@ -5,7 +5,8 @@ import { getPhotoUrl } from '../services/s3.service';
 import { ApplicationSubmitRequest } from '../types';
 
 const router = Router();
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailPattern = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+const phonePattern = /^\+?[0-9](?:[0-9\s().-]*[0-9])?$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type ValidationResult =
@@ -35,6 +36,23 @@ const parseApplicationRequest = (body: unknown): ValidationResult => {
 
 	if (!emailPattern.test(email)) {
 		return { error: 'A valid email is required' };
+	}
+	if (email.length > 254) {
+		return { error: 'Email must be 254 characters or fewer' };
+	}
+
+	const phoneDigits = phone.match(/\d/g)?.length ?? 0;
+	if (
+		!phonePattern.test(phone) ||
+		phoneDigits < 7 ||
+		phoneDigits > 15 ||
+		phone.length > 32
+	) {
+		return { error: 'A valid phone number with 7 to 15 digits is required' };
+	}
+
+	if (coverLetter.length < 100) {
+		return { error: 'Cover letter must be at least 100 characters' };
 	}
 
 	return {
