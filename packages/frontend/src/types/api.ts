@@ -16,6 +16,17 @@ export interface JobsResponse {
 	limit: number;
 }
 
+export interface JobResponse {
+	job: Job;
+}
+
+export interface GenerateUploadUrlRequest {
+	jobId: string;
+	fileName: string;
+	fileType: string;
+	fileSize: number;
+}
+
 export interface PresignedUploadResponse {
 	uploadUrl: string;
 	photoKey: string;
