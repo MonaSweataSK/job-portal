@@ -10,8 +10,8 @@ export interface Job {
 }
 
 export interface Application {
-	id: number;
-	job_id: number;
+	id: string;
+	job_id: string;
 	full_name: string;
 	email: string;
 	phone: string;

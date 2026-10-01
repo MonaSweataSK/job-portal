@@ -104,7 +104,7 @@ router.post('/api/applications', async (request, response) => {
 		}
 
 		const photoUrl = getPhotoUrl(data.photoKey);
-		const applicationResult = await query<{ id: number }>(
+		const applicationResult = await query<{ id: string }>(
 			`INSERT INTO applications
 				(job_id, full_name, email, phone, cover_letter, photo_url, photo_key)
 			 VALUES ($1, $2, $3, $4, $5, $6, $7)

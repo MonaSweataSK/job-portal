@@ -42,7 +42,7 @@ export interface ApplicationSubmitRequest {
 }
 
 export interface ApplicationSubmitResponse {
-	applicationId: number;
+	applicationId: string;
 }
 
 export interface ApiError {
