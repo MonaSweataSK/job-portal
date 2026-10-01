@@ -14,9 +14,6 @@ function App() {
           <span className="wordmark-mark">F</span>
           <span>fieldwork</span>
         </Link>
-        <nav aria-label="Main navigation">
-          <Link to="/jobs">Find a role</Link>
-        </nav>
         <span className="header-note">Thoughtful work. Better futures.</span>
       </header>
 

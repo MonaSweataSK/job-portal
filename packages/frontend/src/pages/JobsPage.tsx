@@ -34,7 +34,6 @@ const JobListing = ({ job }: { job: Job }) => (
 				</Link>
 			</div>
 		</div>
-		<div className="job-index" aria-hidden="true">↗</div>
 	</article>
 );
 
